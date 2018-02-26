@@ -1,0 +1,1 @@
+Automates the desktop and mobile searches for Bing Rewards Points using selenium webdriver, headless firefox, and python. Also includes a way to get to bing mobile on desktop via, mobiletest.py.
