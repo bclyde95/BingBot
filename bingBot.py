@@ -11,18 +11,20 @@ from userAccounts import DataLink
 
 class BingBot:
     def __init__(self, id):
+        """Constructor for BingBot. Initializes the url, id, and datalink"""
         self._url = "http://bing.com"
         self._id = id
         self.data = DataLink()
 
     def _signed_in(self, browser):
+        """Checks if signed in by checking if the 'sign in' text is displayed."""
         if(browser.find_element_by_id("id_s").is_displayed()):
-            return True
-        else:
             return False
+        else:
+            return True
 
     def log_in(self, browser, mobile = False):
-
+        """Automates the sign in click and login screens"""
         login = self.data.getLogin(self._id)
         email = (By.ID, "i0116")
         password = (By.ID, "i0118")
@@ -41,6 +43,8 @@ class BingBot:
         WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable(button)).click()
 
     def find_term(self, browser):
+        # *** IN PROGRESS ***
+        """Selects search terms from a <strong /> tags in the search results, pulling from a list if the terms to start and to avoid an endless loop"""
         try:
             links = browser.find_elements_by_xpath("//ol[@id='b_results']//li[@class='b_algo']//h2//a//strong")
             link_text = []
@@ -52,18 +56,21 @@ class BingBot:
             return random.choice(terms)
 
     def search(self, browser, term):
+        """Automates the search functionality, clearing the text box before each new search"""
         search_box = (By.ID, "sb_form_q")
         WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable(search_box)).send_keys(Keys.CONTROL + 'a', Keys.BACKSPACE)
         WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable(search_box)).send_keys(term, Keys.ENTER)
 
     def desktop(self):
+        # *** IN PROGRESS ***
+        """The automation function for maxing out desktop points"""
         options = Options()
         options.add_argument('-headless')
         browser = webdriver.Firefox()
         while(True):
             try:
                 browser.get(self._url)
-                if (not self._signed_in(browser)):
+                if (self._signed_in(browser)):
                         self.log_in(browser)
                         break
             except Exception:
@@ -86,6 +93,8 @@ class BingBot:
         print('success')
 
     def mobile(self):
+        # *** IN PROGRESS ***
+        """The automation function for maxing out mobile points"""
         profile = webdriver.FirefoxProfile()
         profile.set_preference('general.useragent.override', "Apple iPhone 6s")
         options = Options()

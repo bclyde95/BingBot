@@ -9,6 +9,7 @@ class DataLink:
         self._cur = self._db.cursor()
 
     def getCount(self):
+        """Returns the row count from the database"""
         self._cur.execute("select count(*) from accounts")
         count = int(self._cur.fetchone()[0])
         return count
