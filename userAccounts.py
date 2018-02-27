@@ -8,6 +8,11 @@ class DataLink:
         self._db = sqlite3.connect("accounts.db")
         self._cur = self._db.cursor()
 
+    def getCount(self):
+        self._cur.execute("select count(*) from accounts")
+        count = int(self._cur.fetchone()[0])
+        return count
+
     def getRow(self, id):
         """Gets the row from the db and returns a tuple"""
         self._cur.execute("select * from accounts where id=?", str(id))
@@ -50,20 +55,4 @@ class DataLink:
             self._cur.execute("update accounts set 'timesRedeemed'=? where id=?",dbIn)
             self._db.commit()
         except Exception:
-            print("FAILED!!!!! Points was not a valid input value")
-
-
-
-
-
-
-d = DataLink()
-
-print(d.getLogin(0))
-print(d.getPoints(0))
-d.setPoints(0,3500)
-print(d.getPoints(0))
-print(d.getTimes(0))
-d.setTimes(0,0)
-print(d.getTimes(0))
-print(d.getRow(0))
+            print("FAILED!!!!! Times was not a valid input value")
