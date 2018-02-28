@@ -3,7 +3,7 @@ from userAccounts import DataLink
 
 def main():
     data = DataLink()
-    loginCount = data.getCount()
+    loginCount = data.rowCount()
     for i in range(1,loginCount+1):
         bot = BingBot(i)
         bot.desktop()

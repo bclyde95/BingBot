@@ -72,7 +72,7 @@ class BingBot:
         """The automation function for maxing out desktop points"""
         options = Options()
         options.add_argument('-headless')
-        browser = webdriver.Firefox()
+        browser = webdriver.Firefox(options=options)
         while(True):
             try:
                 browser.get(self._url)

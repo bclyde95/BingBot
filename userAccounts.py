@@ -8,7 +8,7 @@ class DataLink:
         self._db = sqlite3.connect("accounts.db")
         self._cur = self._db.cursor()
 
-    def getCount(self):
+    def rowCount(self):
         """Returns the row count from the database"""
         self._cur.execute("select count(*) from accounts")
         count = int(self._cur.fetchone()[0])
