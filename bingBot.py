@@ -6,7 +6,10 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 import time
 import random
+import re
 from userAccounts import DataLink
+from twitterTerms import TweetTerms
+
 
 
 class BingBot:
@@ -15,6 +18,8 @@ class BingBot:
         self._url = "http://bing.com"
         self._id = id
         self.data = DataLink()
+        twitter = TweetTerms()
+        self.terms = twitter.getHomeTweets()
 
     def _signed_in(self, browser):
         """Checks if signed in by checking if the 'sign in' text is displayed."""
@@ -43,17 +48,18 @@ class BingBot:
         WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable(button)).click()
 
     def find_term(self, browser):
-        # *** IN PROGRESS ***
-        """Selects search terms from a <strong /> tags in the search results, pulling from a list if the terms to start and to avoid an endless loop"""
+        """Selects search terms from the links in the search results, pulling from a list if the terms to start and to avoid an endless loop"""
         try:
-            links = browser.find_elements_by_xpath("//ol[@id='b_results']//li[@class='b_algo']//h2//a//strong")
+            time.sleep(0.5)
+            links = browser.find_elements_by_xpath("//ol[@id='b_results']//li[@class='b_algo']//h2//a")
             link_text = []
             for l in links:
-                link_text.append(l.text)
-            return random.choice(link_text)
+                shortened = re.sub(r"[^\s\w]",'',l.text)
+                searchTerms = re.findall(r"[^\s]+\s[^\s]+", shortened)
+                link_text.append(searchTerms)
+            return random.choice(link_text[random.randint(0,len(link_text))])
         except Exception:
-            terms = ["Portland", "c# vs java", "Microsoft", "c reference", "matplotlib docs", "gitkraken not working", "vscode c# formatting", "coach", "legacy", "tyrant", "Trump", "how to make a bot that writes"]
-            return random.choice(terms)
+            return random.choice(self.terms[random.randint(0,9)])
 
     def search(self, browser, term):
         """Automates the search functionality, clearing the text box before each new search"""

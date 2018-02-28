@@ -57,3 +57,12 @@ class DataLink:
             self._db.commit()
         except Exception:
             print("FAILED!!!!! Times was not a valid input value")
+
+    def getTwitterLogin(self):
+        """Gets twitter api info from the database and returns a tuple"""
+        self._cur.execute("select * from twitterApi")
+        return self._cur.fetchall()[0]
+
+    def __del__(self):
+        self._cur.close()
+        self._db.close()
