@@ -1,3 +1,5 @@
+"""Provides functionality to automate bing searches and login"""
+
 from selenium import webdriver
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
@@ -7,12 +9,13 @@ from selenium.webdriver.firefox.options import Options
 import time
 import random
 import re
-from userAccounts import DataLink
+from dataLink import DataLink
 from twitterTerms import TweetTerms
 
 
 
 class BingBot:
+    """A class to automate interactions with Bing. Includes login, semi-autonomous search (terms need to be input), and fully autonomous desktop and mobile search for rewards points"""
     def __init__(self, id):
         """Constructor for BingBot. Initializes the url, id, and datalink"""
         self._url = "http://bing.com"
@@ -36,18 +39,18 @@ class BingBot:
         button = (By.ID, "idSIButton9")
 
         if mobile:
-            WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable((By.ID, "mHamburger"))).click()
-            WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "#HBSignIn > a:nth-child(1)"))).click()
+            WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable((By.ID, "mHamburger"))).click()
+            WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable((By.CSS_SELECTOR, "#HBSignIn > a:nth-child(1)"))).click()
         else:
             WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable((By.ID, "id_l"))).click()
 
-        WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable(email)).send_keys(login[0])
+        WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable(email)).send_keys(login["email"])
         WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable(button)).click()
 
-        WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable(password)).send_keys(login[1])
+        WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable(password)).send_keys(login["password"])
         WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable(button)).click()
 
-    def find_term(self, browser):
+    def _find_term(self, browser):
         """Selects search terms from the links in the search results, pulling from a list if the terms to start and to avoid an endless loop"""
         try:
             time.sleep(0.5)
@@ -68,7 +71,7 @@ class BingBot:
         WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable(search_box)).send_keys(term, Keys.ENTER)
 
     def desktop(self):
-        # *** IN PROGRESS ***
+        # *** NEED TO TEST ***
         """The automation function for maxing out desktop points"""
         options = Options()
         options.add_argument('-headless')
@@ -84,19 +87,22 @@ class BingBot:
                 browser = webdriver.Firefox()
                 continue
         term = ""
-        i = 0
-        while(i < 40):
+        points = self.data.getPoints(self._id)
+        pointGoal = points + 150
+        while(points < pointGoal):
             time.sleep(0.5)
+            points = int(WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable((By.ID, "id_rc"))).text)
             while(True):
-                temp = self.find_term(browser)
+                temp = self._find_term(browser)
                 if (temp != term):
                     term = temp
                     break
             time.sleep(1)
             self.search(browser, term)
-            i += 1
+            time.sleep(0.5)
+        self.data.setPoints(id, points)
         browser.quit()
-        print('success')
+        print(self.data.getLogin(id)[0],'Desktop :', self.data.getPoints(id))
 
     def mobile(self):
         # *** IN PROGRESS ***
@@ -121,7 +127,7 @@ class BingBot:
             try:
                 time.sleep(1)
                 while(True):
-                    temp = self.find_term(browser)
+                    temp = self._find_term(browser)
                     if (temp != term):
                         term = temp
                         break

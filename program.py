@@ -1,5 +1,7 @@
+"""Runs the rewards search continuously until all accounts in db reach their daily limit"""
+
 from bingBot import BingBot
-from userAccounts import DataLink
+from dataLink import DataLink
 
 def main():
     data = DataLink()
