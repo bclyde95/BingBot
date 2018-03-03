@@ -1,5 +1,5 @@
 import tweepy
-from userAccounts import DataLink
+from dataLink import DataLink
 import re
 
 class TweetTerms:

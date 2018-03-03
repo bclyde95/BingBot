@@ -131,16 +131,19 @@ class BingBot:
         WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable(search_box)).send_keys(term, Keys.ENTER)
 
     def desktop(self):
-        # *** NEED TO TEST ***
         """The automation function for maxing out desktop points"""
 
         browser = self.log_in(headless=True)
         term = ""
-        points = int(WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable((By.ID, "id_rc"))).text)
-        pointGoal = points + 150
-        while(points <= pointGoal):
+        try:
+            points = int(WebDriverWait(browser,10).until(expected_conditions.visibility_of_element_located((By.ID, "id_rc"))).text)
+        except Exception:
             time.sleep(0.5)
-            points = int(WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable((By.ID, "id_rc"))).text)
+            points = int(WebDriverWait(browser,10).until(expected_conditions.visibility_of_element_located((By.ID, "id_rc"))).text)
+        pointGoal = points + 150
+        while(points < pointGoal):
+            time.sleep(0.5)
+            points = int(WebDriverWait(browser,10).until(expected_conditions.visibility_of_element_located((By.ID, "id_rc"))).text)
             while(True):
                 temp = self._find_term(browser)
                 if (temp != term):
@@ -149,14 +152,16 @@ class BingBot:
             time.sleep(1)
             self.search(browser, term)
             time.sleep(0.5)
-        self.data.setPoints(id, points)
+
+        if (points < self.data.getPoints(self._id)):
+            self.data.setTimes(self._id, self.data.getTimes(self._id) + 1)
+        self.data.setPoints(self._id, points)
         browser.quit()
-        print(self.data.getLogin(id)[0],'Desktop :', self.data.getPoints(id))
+        print(self.data.getLogin(self._id)["email"],'Total Points :', self.data.getPoints(self._id))
 
     def mobile(self):
-        # *** IN PROGRESS ***
         """The automation function for maxing out mobile points"""
-        
+
         browser = self.log_in(mobile=True, headless=True)
         term = ""
         i = 0
@@ -175,5 +180,11 @@ class BingBot:
                 alert = browser.switch_to_alert()
                 alert.accept()
                 continue
+        browser.get("http://www.bing.com")
+        WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable((By.ID, "mHamburger"))).click()
+        points = WebDriverWait(browser, 10).until(expected_conditions.visibility_of_element_located((By.ID, "fly_id_rc"))).text
+        if (points < self.data.getPoints(self._id)):
+            self.data.setTimes(self._id, self.data.getTimes(self._id) + 1)
+        self.data.setPoints(self._id, int(points))
         browser.quit()
-        print('success')
+        print(self.data.getLogin(self._id)["email"], 'Total Points :', self.data.getPoints(self._id))
