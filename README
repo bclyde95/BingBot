@@ -1,1 +1,1 @@
-Automates the desktop and mobile searches for Bing Rewards Points using selenium webdriver, headless firefox, and python. Also includes a way to get to bing mobile on desktop via, mobiletest.py.
+Provides functionality to automate interactions with Bing. Includes login, semi-autonomous search (terms need to be input), and fully autonomous desktop and mobile search for rewards points
