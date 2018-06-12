@@ -19,7 +19,6 @@ class BingBot:
 
     def __init__(self, id):
         """Constructor for BingBot. Initializes the url, id, Datalink and TweetTerms classes, and generates the twitter search terms"""
-
         self._url = "http://bing.com"
         self._id = id
         self.data = DataLink()
@@ -30,9 +29,9 @@ class BingBot:
         """Checks if signed in by checking if the 'sign in' text is displayed."""
 
         if(browser.find_element_by_id("id_s").is_displayed()):
-            return False
-        else:
             return True
+        else:
+            return False
 
     def _log_in(self, browser, mobile = False):
         """The functionality of the public log_in() function"""
@@ -63,48 +62,60 @@ class BingBot:
         WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable(button)).click()
 
     def log_in(self, mobile = False, headless=False):
-        """Automates the sign in click and login screens. 'mobile' mode when mobile=False"""
+        """Automates the sign in click and login screens. 'mobile' mode when mobile=True"""
 
+        # Add headless option
         options = Options()
         options.add_argument('-headless')
+
         if (mobile):
+            # create Firefox profile with an Iphone 6 as the user agent
             profile = webdriver.FirefoxProfile()
             profile.set_preference('general.useragent.override', "Apple iPhone 6s")
+
             if (headless):
-                browser = webdriver.Firefox(profile, options=options)
+                # if headless, create webdriver with the data for headless and mobile
+                browser = webdriver.Firefox(profile, options=options, executable_path="./geckodriver")
             else:
-                browser = webdriver.Firefox(profile)
+                # if not, create webdriver with only the data for mobile
+                browser = webdriver.Firefox(profile, executable_path="./geckodriver")
         else:
             if (headless):
-                browser = webdriver.Firefox(options=options)
+                # if headless, create webdriver with data for headless
+                browser = webdriver.Firefox(options=options, executable_path="./geckodriver")
             else:
-                browser = webdriver.Firefox()
+                # if not, create webdriver normally
+                browser = webdriver.Firefox(executable_path="./geckodriver")
         if (mobile):
             while(True):
                 try:
+                    # load the webpage and login. if successful, break the loop
                     browser.get(self._url)
                     self._log_in(browser, mobile=True)
                     break
                 except Exception:
+                    # if login fails, quit the current browser instance and open the correct new one
                     browser.quit()
                     if (headless):
-                        browser = webdriver.Firefox(profile, options=options)
+                        browser = webdriver.Firefox(profile, options=options, executable_path="./geckodriver")
                     else:
-                        browser = webdriver.Firefox(profile)
+                        browser = webdriver.Firefox(profile, executable_path="./geckodriver")
                     continue
         else:
             while(True):
                 try:
+                    # load the webpage, check if signed in. if not, login. if successful break the loop
                     browser.get(self._url)
-                    if (self._signed_in(browser)):
+                    if (not self._signed_in(browser)):
                         self._log_in(browser)
                         break
                 except Exception:
+                    # if login fails, quit the current browser instance and open the correct new one
                     browser.quit()
                     if (headless):
-                        browser = webdriver.Firefox(options=options)
+                        browser = webdriver.Firefox(options=options, executable_path="./geckodriver")
                     else:
-                        browser = webdriver.Firefox()
+                        browser = webdriver.Firefox(executable_path="./geckodriver")
                     continue
         return browser
 
@@ -113,78 +124,123 @@ class BingBot:
 
         try:
             time.sleep(0.5)
+            # get all of the search result links on the page
             links = browser.find_elements_by_xpath("//ol[@id='b_results']//li[@class='b_algo']//h2//a")
             link_text = []
             for l in links:
+                # remove anything that is not a space or a word from the string
                 shortened = re.sub(r"[^\s\w]",'',l.text)
+                # make terms from two words separated by a space
                 searchTerms = re.findall(r"[^\s]+\s[^\s]+", shortened)
+                # add search terms to the link_text list
                 link_text.append(searchTerms)
+            # pick a random search term and return it
             return random.choice(link_text[random.randint(0,len(link_text))])
         except Exception:
+            # if picking from the webpage fails, randomly pick from terms generated from twitter data
             return random.choice(self.terms[random.randint(0,9)])
 
     def search(self, browser, term):
         """Automates the search functionality, clearing the text box before each new search"""
 
+        # select search box
         search_box = (By.ID, "sb_form_q")
+        # select all pre-existing text and delete it
         WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable(search_box)).send_keys(Keys.CONTROL + 'a', Keys.BACKSPACE)
+        # input term into search box and hit enter
         WebDriverWait(browser,10).until(expected_conditions.element_to_be_clickable(search_box)).send_keys(term, Keys.ENTER)
 
     def desktop(self):
         """The automation function for maxing out desktop points"""
 
+        # start headless browser and login
         browser = self.log_in(headless=True)
         term = ""
+        # try getting the point value from the on-page element. If it fails, wait then try again
         try:
             points = int(WebDriverWait(browser,10).until(expected_conditions.visibility_of_element_located((By.ID, "id_rc"))).text)
         except Exception:
             time.sleep(0.5)
             points = int(WebDriverWait(browser,10).until(expected_conditions.visibility_of_element_located((By.ID, "id_rc"))).text)
+
+        # level 2 users can earn 150 desktop points per day, so that is the point goal
         pointGoal = points + 150
+
+        # run until the point value has reached the goal
         while(points < pointGoal):
             time.sleep(0.5)
+            # get point value from page
             points = int(WebDriverWait(browser,10).until(expected_conditions.visibility_of_element_located((By.ID, "id_rc"))).text)
+
             while(True):
+                # finds term from page or twitter
                 temp = self._find_term(browser)
+                # if current term does not equal previous term, store temp in term and exit loop.
+                # if not, generate another term
                 if (temp != term):
                     term = temp
                     break
             time.sleep(1)
+            # search using the generated term
             self.search(browser, term)
             time.sleep(0.5)
 
-        if (points < self.data.getPoints(self._id)):
+        # if points are lower than previously stored, the user must have redeemed some.
+        # if true, increment timesRedeemed in database by 1
+        if (int(points) < self.data.getPoints(self._id)):
             self.data.setTimes(self._id, self.data.getTimes(self._id) + 1)
+
+        # set points in database to current points
         self.data.setPoints(self._id, points)
+
+        # quit browser and output account and current points to console
         browser.quit()
         print(self.data.getLogin(self._id)["email"],'Total Points :', self.data.getPoints(self._id))
 
     def mobile(self):
         """The automation function for maxing out mobile points"""
-
+        # start headless, mobile browser and login
         browser = self.log_in(mobile=True, headless=True)
         term = ""
         i = 0
-        while(i < 30):
+
+        # reading points on each iteration is slow and unreliable on mobile so another approach is taken
+        # 5 points are earned per search with a max of 100 on mobile. it iterates 25 times to account for possible repeats
+        while(i < 25):
             try:
                 time.sleep(1)
                 while(True):
+                    # if current term does not equal previous term, store temp in term and exit loop.
+                    # if not, generate another term
                     temp = self._find_term(browser)
                     if (temp != term):
                         term = temp
                         break
                 time.sleep(1)
+                # search using the generated term
                 self.search(browser, term)
+
+                # iterate counter
                 i += 1
             except Exception:
+                # if a popup asking for location occurs, switch to the alert and accept it
                 alert = browser.switch_to_alert()
                 alert.accept()
                 continue
-        browser.get("http://www.bing.com")
+
+        # reload the page, open mobile menu and get points value
+        browser.get(self._url)
         WebDriverWait(browser, 10).until(expected_conditions.element_to_be_clickable((By.ID, "mHamburger"))).click()
         points = WebDriverWait(browser, 10).until(expected_conditions.visibility_of_element_located((By.ID, "fly_id_rc"))).text
-        if (points < self.data.getPoints(self._id)):
+
+        # if points are lower than previously stored, the user must have redeemed some.
+        # if true, increment timesRedeemed in database by 1
+        if (int(points) < self.data.getPoints(self._id)):
             self.data.setTimes(self._id, self.data.getTimes(self._id) + 1)
+
+        # set points in database to current points
         self.data.setPoints(self._id, int(points))
+
+        # quit browser and output account and current points to console
         browser.quit()
         print(self.data.getLogin(self._id)["email"], 'Total Points :', self.data.getPoints(self._id))
