@@ -1,1 +1,2 @@
 Provides functionality to automate interactions with Bing. Includes login, semi-autonomous search (terms need to be input), and fully autonomous desktop and mobile search for rewards points
+Requires an accounts.db file with a table called 'accounts' containing fields: id, email, password, points, timesRedeemed
