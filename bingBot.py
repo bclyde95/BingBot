@@ -138,7 +138,14 @@ class BingBot:
             return random.choice(link_text[random.randint(0,len(link_text))])
         except Exception:
             # if picking from the webpage fails, randomly pick from terms generated from twitter data
-            return random.choice(self.terms[random.randint(0,9)])
+            term = ""
+            while True:
+                try:
+                    term = random.choice(self.terms[random.randint(0,14)])
+                    break
+                except IndexError:
+                    continue
+            return term
 
     def search(self, browser, term):
         """Automates the search functionality, clearing the text box before each new search"""
@@ -154,23 +161,20 @@ class BingBot:
         """The automation function for maxing out desktop points"""
 
         # start headless browser and login
-        browser = self.log_in(headless=True)
+        while True:
+            try:
+                browser = self.log_in(headless=True)
+                break
+            except Exception:
+                continue
+        
+
         term = ""
-        # try getting the point value from the on-page element. If it fails, wait then try again
-        try:
-            points = int(WebDriverWait(browser,10).until(expected_conditions.visibility_of_element_located((By.ID, "id_rc"))).text)
-        except Exception:
-            time.sleep(0.5)
-            points = int(WebDriverWait(browser,10).until(expected_conditions.visibility_of_element_located((By.ID, "id_rc"))).text)
+        i = 0
 
-        # level 2 users can earn 150 desktop points per day, so that is the point goal
-        pointGoal = points + 150
-
-        # run until the point value has reached the goal
-        while(points < pointGoal):
+        # 5 points are earned per search with a max of 150 on desktop. it iterates 35 times to account for possible repeats
+        while(i < 35):
             time.sleep(0.5)
-            # get point value from page
-            points = int(WebDriverWait(browser,10).until(expected_conditions.visibility_of_element_located((By.ID, "id_rc"))).text)
 
             while(True):
                 # finds term from page or twitter
@@ -185,8 +189,12 @@ class BingBot:
             self.search(browser, term)
             time.sleep(0.5)
 
+            # iterate counter
+            i += 1
+
         # if points are lower than previously stored, the user must have redeemed some.
         # if true, increment timesRedeemed in database by 1
+        points = int(WebDriverWait(browser,10).until(expected_conditions.visibility_of_element_located((By.ID, "id_rc"))).text)
         if (int(points) < self.data.getPoints(self._id)):
             self.data.setTimes(self._id, self.data.getTimes(self._id) + 1)
 
@@ -200,11 +208,17 @@ class BingBot:
     def mobile(self):
         """The automation function for maxing out mobile points"""
         # start headless, mobile browser and login
-        browser = self.log_in(mobile=True, headless=True)
+        while True:
+            try:
+                browser = self.log_in(mobile=True, headless=True)
+                break
+            except Exception:
+                continue
+        
+        
         term = ""
         i = 0
 
-        # reading points on each iteration is slow and unreliable on mobile so another approach is taken
         # 5 points are earned per search with a max of 100 on mobile. it iterates 25 times to account for possible repeats
         while(i < 25):
             try:
@@ -224,9 +238,12 @@ class BingBot:
                 i += 1
             except Exception:
                 # if a popup asking for location occurs, switch to the alert and accept it
-                alert = browser.switch_to_alert()
-                alert.accept()
-                continue
+                try:
+                    alert = browser.switch_to_alert()
+                    alert.accept()
+                    continue
+                except Exception:
+                    continue
 
         # reload the page, open mobile menu and get points value
         browser.get(self._url)
